@@ -93,7 +93,25 @@ app.post('/api/summarize-transcript', async (req, res) => {
       }
     });
 
-    const result = await model.generateContent(transcript);
+    // Retry logic for overloaded servers
+    let retries = 3;
+    let result;
+    
+    while (retries > 0) {
+      try {
+        result = await model.generateContent(transcript);
+        break; // Success, exit retry loop
+      } catch (retryError) {
+        retries--;
+        if (retryError.status === 503 && retries > 0) {
+          console.log(`Server overloaded, retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+          continue;
+        }
+        throw retryError; // Re-throw if not a 503 or no retries left
+      }
+    }
+
     const response = await result.response;
     const text = response.text();
     
@@ -110,6 +128,12 @@ app.post('/api/summarize-transcript', async (req, res) => {
       stack: error.stack,
       apiKey: process.env.GEMINI_API_KEY ? 'Present' : 'Missing'
     });
+    
+    if (error.status === 503) {
+      return res.status(503).json({ 
+        error: 'The AI service is temporarily overloaded. Please try again in a few minutes.' 
+      });
+    }
     
     if (error.message && error.message.includes('JSON')) {
       return res.status(500).json({ 
