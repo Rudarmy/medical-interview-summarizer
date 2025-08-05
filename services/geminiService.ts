@@ -1,7 +1,7 @@
 import { Summary } from '../types';
 
-// Use environment variable or fallback to localhost for development
-const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use Railway production URL
+const API_BASE_URL = 'https://medical-interview-summarizer-production.up.railway.app/api';
 
 export const summarizeTranscript = async (transcript: string, language: string): Promise<Summary> => {
   try {
