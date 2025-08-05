@@ -1,0 +1,8 @@
+{
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "name": "Medical Interview Summarizer",
+  "description": "",
+  "prompt": ""
+}
