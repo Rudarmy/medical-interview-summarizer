@@ -26,32 +26,89 @@
    git push -u origin main
    ```
 
-### Step 2: Deploy on Railway
+### Step 2: Deploy on Railway (Detailed Steps)
+
+#### 2.1 Initial Railway Setup
 
 1. **Go to Railway.app**:
    - Visit: https://railway.app
-   - Click "Start a New Project"
+   - Click "Login" (top right)
+   - Sign in with GitHub (recommended) or email
 
-2. **Connect GitHub**:
+2. **Create New Project**:
+   - After login, click "New Project" or "Start a New Project"
+   - You'll see deployment options
+
+#### 2.2 GitHub Integration (Detailed)
+
+3. **Connect GitHub Repository**:
    - Click "Deploy from GitHub repo"
-   - If not connected, click "Configure GitHub App"
-   - Authorize Railway to access your repositories
+   - **If first time**: Railway will ask for GitHub permissions
+     - Click "Configure GitHub App"
+     - Select your GitHub account
+     - Choose "All repositories" OR "Selected repositories"
+     - If selected: choose `medical-interview-summarizer`
+     - Click "Install & Authorize"
 
-3. **Select Repository**:
-   - Find your `medical-interview-summarizer` repository
-   - Click on it
+4. **Repository Selection**:
+   - You'll see a list of your repositories
+   - Find `medical-interview-summarizer`
+   - Click on it to select
 
-4. **Configure Deployment**:
-   - Railway will auto-detect it's a Node.js project
-   - It will automatically run `npm install` and `npm start`
-   - **IMPORTANT**: Railway will deploy the ROOT directory by default
+#### 2.3 Initial Deployment Configuration
 
-5. **Configure Root Path for Backend**:
-   - In Railway dashboard, go to "Settings"
-   - Under "Build & Deploy", set:
-     - **Root Directory**: `backend`
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
+5. **Auto-Detection Phase**:
+   - Railway scans your repository
+   - It will detect: "Node.js application"
+   - Shows detected files: `package.json`, `server.js`
+   - **⚠️ WARNING**: It will try to deploy from ROOT directory first
+
+6. **First Deployment Attempt**:
+   - Railway will start building immediately
+   - **This will FAIL** because it's looking in the wrong directory
+   - You'll see build errors in the logs
+
+#### 2.4 Configure Correct Backend Path
+
+7. **Go to Project Settings**:
+   - In Railway dashboard, click your project name
+   - Click "Settings" tab (gear icon)
+   - Scroll to "Build & Deploy" section
+
+8. **Set Root Directory**:
+   - **Root Directory**: Change from `.` to `backend`
+   - **Build Command**: Should auto-fill to `npm install`
+   - **Start Command**: Should auto-fill to `npm start`
+   - Click "Save Changes"
+
+#### 2.5 Trigger Rebuild
+
+9. **Redeploy with Correct Settings**:
+   - Go to "Deployments" tab
+   - Click "Deploy Latest" or wait for auto-redeploy
+   - Monitor build logs in real-time
+
+#### 2.6 Build Process Details
+
+10. **Watch the Build**:
+    - **Phase 1**: Git clone from your repository
+    - **Phase 2**: Navigate to `/backend` directory
+    - **Phase 3**: Run `npm install` (installs dependencies)
+    - **Phase 4**: Start application with `npm start`
+    - **Success**: You'll see "Deployment live" message
+
+#### 2.7 Verify Deployment
+
+11. **Check Deployment Status**:
+    - Green checkmark = Success
+    - Red X = Failed (check logs)
+    - Yellow loading = Still building
+
+12. **Get Your Railway URL**:
+    - In "Settings" tab, scroll to "Networking"
+    - Click "Generate Domain" if no domain exists
+    - Your URL format: `https://[random-name].railway.app`
+    - **Save this URL** - you'll need it for frontend!
 
 ### Step 3: Set Environment Variables
 
@@ -127,35 +184,86 @@
    - Transcript: `POST https://your-railway-url.railway.app/api/summarize-transcript`
    - Audio: `POST https://your-railway-url.railway.app/api/summarize-audio`
 
-## 🔧 Troubleshooting
+## 🔧 Detailed Troubleshooting for Railway Deployment
 
-### Common Issues:
+### Common Issues During Step 2:
 
-1. **Build Fails**:
-   - Check Railway build logs
-   - Ensure `package.json` has correct start script
-   - Verify Node.js version compatibility
+#### Issue 1: "Cannot find module" during build
+**Symptoms**: Build fails with module not found errors
+**Solutions**:
+1. Check that `backend/package.json` exists
+2. Verify Root Directory is set to `backend` (not `.` or empty)
+3. In Railway logs, look for: `npm install` running in `/app/backend`
+4. If still failing, check that all dependencies are in `package.json`
 
-2. **Server Won't Start**:
-   - Check environment variables are set
-   - Verify PORT is using `process.env.PORT`
-   - Check Railway deployment logs
+#### Issue 2: "Permission denied" or GitHub access errors
+**Symptoms**: Cannot see repositories or access denied
+**Solutions**:
+1. Go to GitHub.com → Settings → Applications → Authorized GitHub Apps
+2. Find "Railway" and click "Configure"
+3. Make sure your repository is selected
+4. If still issues, revoke and re-authorize Railway
 
-3. **CORS Errors**:
-   - Verify `FRONTEND_URL` environment variable
-   - Check your domain is listed in CORS origins
+#### Issue 3: Build succeeds but app won't start
+**Symptoms**: Build completes but deployment fails at startup
+**Solutions**:
+1. Check Railway logs for error messages
+2. Common fix: Ensure `server.js` uses `process.env.PORT`
+3. Verify `package.json` start script: `"start": "node server.js"`
+4. Check that environment variables are set (next step)
 
-4. **API Key Errors**:
-   - Verify `GEMINI_API_KEY` environment variable
-   - Test API key works in Google AI Studio
+#### Issue 4: Can't find repository in Railway
+**Symptoms**: Your repo doesn't appear in Railway's repository list
+**Solutions**:
+1. Make sure repo is pushed to GitHub (check github.com)
+2. If private repo, ensure Railway has access
+3. Refresh the page in Railway
+4. Try disconnecting and reconnecting GitHub
 
-### Railway Dashboard Navigation:
+#### Issue 5: Railway keeps deploying from wrong directory
+**Symptoms**: Still getting "package.json not found" even after setting Root Directory
+**Solutions**:
+1. Settings → Build & Deploy → Root Directory → `backend`
+2. Click "Save Changes" button (important!)
+3. Go to Deployments → Click "Deploy Latest"
+4. Watch logs to confirm it's now looking in `/app/backend`
 
-1. **Deployments**: See build and deployment history
-2. **Logs**: Real-time server logs and errors
-3. **Metrics**: CPU, memory, and request metrics
-4. **Variables**: Environment variables
-5. **Settings**: Domain, build settings, danger zone
+### Railway Dashboard Navigation Guide:
+
+1. **Overview Tab**: Shows general project info and quick stats
+2. **Deployments Tab**: 
+   - Lists all deployment attempts
+   - Click on any deployment to see detailed logs
+   - Green = success, Red = failed, Yellow = building
+3. **Logs Tab**: Real-time application logs (after successful deploy)
+4. **Variables Tab**: Where you'll add environment variables (Step 3)
+5. **Settings Tab**: 
+   - Build configuration (Root Directory here!)
+   - Domain settings
+   - Danger zone (delete project)
+
+### Step-by-Step Log Watching:
+
+When you trigger a deployment, watch these log phases:
+1. **Git Clone**: `Cloning repository...`
+2. **Directory Check**: Should show `/app/backend` if configured correctly
+3. **Install Phase**: `npm install` with dependency downloads
+4. **Build Complete**: `Build completed successfully`
+5. **Start Phase**: `Starting application...`
+6. **Success**: `Server is running on port...`
+
+### What Success Looks Like:
+
+In Railway logs, you should see:
+```
+✅ Git clone completed
+✅ Changed directory to /app/backend
+✅ Running npm install...
+✅ Dependencies installed
+✅ Starting with: npm start
+✅ Server is running on port 3001
+✅ Deployment is live at: https://your-app.railway.app
+```
 
 ## 💰 Railway Pricing
 
