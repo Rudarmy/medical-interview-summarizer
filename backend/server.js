@@ -105,6 +105,11 @@ app.post('/api/summarize-transcript', async (req, res) => {
 
   } catch (error) {
     console.error('Error summarizing transcript:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      apiKey: process.env.GEMINI_API_KEY ? 'Present' : 'Missing'
+    });
     
     if (error.message && error.message.includes('JSON')) {
       return res.status(500).json({ 
