@@ -4,7 +4,7 @@
 
 1. ✅ Your backend folder is ready (`/backend` directory)
 2. ✅ You have a GitHub account
-3. ✅ Your API key: `AIzaSyBD3V4aNlW-2MPC4b4S8e1fsoGxPs5E848`
+3. ✅ Your API key: `<YOUR_GEMINI_API_KEY>`
 
 ## 🎯 Method 1: Deploy from GitHub (Recommended)
 
@@ -118,7 +118,7 @@
    - Add these variables:
 
    ```
-   GEMINI_API_KEY = AIzaSyBD3V4aNlW-2MPC4b4S8e1fsoGxPs5E848
+   GEMINI_API_KEY = <YOUR_GEMINI_API_KEY>
    FRONTEND_URL = https://goodtimesstudio.com
    NODE_ENV = production
    ```
@@ -168,7 +168,7 @@
 
 4. **Set Environment Variables**:
    ```bash
-   railway variables set GEMINI_API_KEY=AIzaSyBD3V4aNlW-2MPC4b4S8e1fsoGxPs5E848
+   railway variables set GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
    railway variables set FRONTEND_URL=https://goodtimesstudio.com
    railway variables set NODE_ENV=production
    ```

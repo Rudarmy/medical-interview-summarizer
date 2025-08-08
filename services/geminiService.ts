@@ -1,7 +1,7 @@
 import { Summary } from '../types';
 
-// Use Railway production URL
-const API_BASE_URL = 'https://medical-interview-summarizer-production.up.railway.app/api';
+// API base URL: prefer Vite env, fallback to production backend
+const API_BASE_URL = (import.meta as any)?.env?.VITE_API_URL || 'https://medical-interview-summarizer-production.up.railway.app/api';
 
 export const summarizeTranscript = async (transcript: string, language: string): Promise<Summary> => {
   try {
@@ -15,9 +15,17 @@ export const summarizeTranscript = async (transcript: string, language: string):
         language
       }),
     });
-
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text();
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
+      
       throw new Error(errorData.error || `Server error: ${response.status}`);
     }
 

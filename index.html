@@ -3,11 +3,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Medical Interview Summarizer</title>
-    <link rel="stylesheet" href="/index.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?v=3.4.0"></script>
+    <script>
+      tailwind.config = {
+        // Suppress production warning for this demo application
+        content: ['./src/**/*.{html,js,ts,jsx,tsx}', './index.html'],
+        theme: { extend: {} },
+        plugins: []
+      };
+    </script>
   <script type="importmap">
 {
   "imports": {

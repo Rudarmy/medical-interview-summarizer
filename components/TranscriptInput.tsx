@@ -11,6 +11,7 @@ import { FileAudioIcon } from './icons/FileAudioIcon';
 interface SpeechRecognition {
     continuous: boolean;
     interimResults: boolean;
+    lang?: string;
     onresult: (event: any) => void;
     onstart: () => void;
     onend: () => void;
@@ -34,6 +35,7 @@ interface TranscriptInputProps {
   onAudioFileChange: (file: File | null) => void;
   onLoadExample: () => void;
   disabled: boolean;
+  language: string;
 }
 
 const TabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode, disabled: boolean }> = ({ active, onClick, children, disabled }) => (
@@ -52,48 +54,246 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
 );
 
 
-const RecordView: React.FC<{ onTranscriptChange: (value: string) => void; disabled: boolean }> = ({ onTranscriptChange, disabled }) => {
+const RecordView: React.FC<{ onTranscriptChange: (value: string) => void; disabled: boolean; language: string }> = ({ onTranscriptChange, disabled, language }) => {
     const [isRecording, setIsRecording] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const accumulatedTranscriptRef = useRef<string>('');
+    const shouldContinueRef = useRef<boolean>(false);
+    const finalizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const languageLoggedRef = useRef<string>(''); // Track logged language to prevent duplicates
 
-    const handleRecord = () => {
+    // Map language names to speech recognition language codes
+    const getLanguageCode = (language: string): string => {
+        const languageMap: { [key: string]: string } = {
+            'English': 'en-US',
+            'Spanish': 'es-ES',
+            'French': 'fr-FR',
+            'German': 'de-DE',
+            'Italian': 'it-IT',
+            'Portuguese': 'pt-PT',
+            'Dutch': 'nl-NL',
+            'Chinese': 'zh-CN',
+            'Japanese': 'ja-JP',
+            'Korean': 'ko-KR',
+            'Russian': 'ru-RU',
+            'Arabic': 'ar-SA',
+            'Hindi': 'hi-IN',
+            'Turkish': 'tr-TR',
+            'Polish': 'pl-PL',
+            'Swedish': 'sv-SE',
+            'Norwegian': 'nb-NO',
+            'Danish': 'da-DK',
+            'Finnish': 'fi-FI',
+            'Greek': 'el-GR',
+            'Hebrew': 'he-IL',
+            'Thai': 'th-TH',
+            'Vietnamese': 'vi-VN',
+            'Indonesian': 'id-ID',
+            'Malay': 'ms-MY',
+            'Tamil': 'ta-IN',
+            'Bengali': 'bn-IN',
+            'Gujarati': 'gu-IN',
+            'Kannada': 'kn-IN',
+            'Malayalam': 'ml-IN',
+            'Marathi': 'mr-IN',
+            'Telugu': 'te-IN',
+            'Urdu': 'ur-PK'
+        };
+        
+        return languageMap[language] || 'en-US'; // Default to English if language not found
+    };
+
+    const startRecording = () => {
         if (!isSpeechRecognitionSupported || !SpeechRecognitionAPI) {
             setError("Speech recognition is not supported in your browser. Please try Chrome or Edge.");
             return;
         }
 
-        if (isRecording) {
-            recognitionRef.current?.stop();
-            return;
-        }
-
         const recognition = new SpeechRecognitionAPI();
         recognitionRef.current = recognition;
+        shouldContinueRef.current = true;
+        
         recognition.continuous = true;
         recognition.interimResults = true;
+        
+        // Set language based on user selection
+        if ('lang' in recognition) {
+            const languageCode = getLanguageCode(language);
+            (recognition as any).lang = languageCode;
+            
+            // Only log if language changed
+            if (languageLoggedRef.current !== languageCode) {
+                console.log(`Speech recognition language set to: ${languageCode} for ${language}`);
+                languageLoggedRef.current = languageCode;
+            }
+        }
 
         recognition.onresult = (event) => {
+            let interimTranscript = '';
             let finalTranscript = '';
-            for (let i = 0; i < event.results.length; i++) {
-                 finalTranscript += event.results[i][0].transcript;
+            
+
+            
+            // Process all results from the current event
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+
+                
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
             }
-            onTranscriptChange(finalTranscript);
+            
+            // Update accumulated transcript with final results
+            if (finalTranscript) {
+                accumulatedTranscriptRef.current += finalTranscript;
+
+
+            }
+            
+            // If we have interim results, set a timeout to finalize them
+            if (interimTranscript && !finalTranscript) {
+                // Clear any existing timeout
+                if (finalizeTimeoutRef.current) {
+                    clearTimeout(finalizeTimeoutRef.current);
+                }
+                
+                // Set a new timeout to finalize interim results after 2 seconds of silence
+                finalizeTimeoutRef.current = setTimeout(() => {
+
+                    accumulatedTranscriptRef.current += interimTranscript + ' ';
+                    const finalizedTranscript = accumulatedTranscriptRef.current;
+
+                    onTranscriptChange(finalizedTranscript);
+                }, 2000);
+            }
+            
+            // Always send the current state (accumulated + interim) to show real-time feedback
+            const displayTranscript = accumulatedTranscriptRef.current + interimTranscript;
+
+            onTranscriptChange(displayTranscript);
         };
         
-        recognition.onstart = () => setIsRecording(true);
-        recognition.onend = () => setIsRecording(false);
+        recognition.onstart = () => {
+            setIsRecording(true);
+            setError(null);
+
+        };
+        
+        recognition.onend = () => {
+
+            // Only restart if we should continue and haven't been manually stopped
+            if (shouldContinueRef.current && recognitionRef.current) {
+                setTimeout(() => {
+                    if (shouldContinueRef.current && recognitionRef.current) {
+                        try {
+
+                            recognitionRef.current.start();
+                        } catch (e) {
+
+                            setIsRecording(false);
+                        }
+                    }
+                }, 100);
+            } else {
+                setIsRecording(false);
+            }
+        };
+        
+        // Add additional event handlers for debugging (cast to any for TypeScript)
+        (recognition as any).onaudiostart = () => {
+
+        };
+        
+        (recognition as any).onaudioend = () => {
+
+        };
+        
+        (recognition as any).onspeechstart = () => {
+
+        };
+        
+        (recognition as any).onspeechend = () => {
+
+        };
+        
+        (recognition as any).onsoundstart = () => {
+
+        };
+        
+        (recognition as any).onsoundend = () => {
+
+        };
+        
         recognition.onerror = (event) => {
-            setError(`Speech recognition error: ${event.error}`);
-            setIsRecording(false);
+
+            
+            // Handle different error types
+            if (event.error === 'no-speech') {
+                // Continue recording despite no speech
+                return;
+            }
+            
+            if (event.error === 'audio-capture') {
+                setError('Microphone access denied. Please allow microphone permissions.');
+                stopRecording();
+            } else if (event.error === 'not-allowed') {
+                setError('Microphone permission denied. Please refresh and allow microphone access.');
+                stopRecording();
+            } else if (event.error === 'aborted') {
+                // Expected when stopping manually
+                return;
+            } else {
+                setError(`Speech recognition error: ${event.error}`);
+                stopRecording();
+            }
         };
 
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (e) {
+            setError('Failed to start recording. Please try again.');
+            console.error('Start recording error:', e);
+        }
+    };
+
+    const stopRecording = () => {
+        shouldContinueRef.current = false;
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
+        // Clear any pending finalization timeout
+        if (finalizeTimeoutRef.current) {
+            clearTimeout(finalizeTimeoutRef.current);
+            finalizeTimeoutRef.current = null;
+        }
+        setIsRecording(false);
+    };
+
+    const handleRecord = () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            // Reset accumulated transcript when starting new recording
+            accumulatedTranscriptRef.current = '';
+            onTranscriptChange('');
+            startRecording();
+        }
     };
     
     useEffect(() => {
         return () => {
-            recognitionRef.current?.abort();
+            shouldContinueRef.current = false;
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+            }
+            if (finalizeTimeoutRef.current) {
+                clearTimeout(finalizeTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -112,8 +312,15 @@ const RecordView: React.FC<{ onTranscriptChange: (value: string) => void; disabl
                 <MicrophoneIcon className="w-10 h-10" />
                 {isRecording && <span className="absolute inset-0 rounded-full bg-white/30 animate-ping"></span>}
             </button>
-            <p className="mt-4 font-semibold text-slate-700">{isRecording ? "Recording..." : "Start Recording"}</p>
-            <p className="mt-1 text-sm text-slate-500">{isRecording ? "Click to stop" : "Click the button to start recording"}</p>
+            <p className="mt-4 font-semibold text-slate-700">
+                {isRecording ? "Recording... Click to stop" : "Click to start recording"}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+                {isRecording 
+                    ? "Speak clearly into your microphone. The recording will continue until you click stop." 
+                    : "Click the button and speak your patient interview. Recording will continue until you stop it."
+                }
+            </p>
         </div>
     );
 };
@@ -177,7 +384,7 @@ const UploadView: React.FC<{ audioFile: File | null; onAudioFileChange: (file: F
 };
 
 
-const TranscriptInput: React.FC<TranscriptInputProps> = ({ transcript, onTranscriptChange, audioFile, onAudioFileChange, onLoadExample, disabled }) => {
+const TranscriptInput: React.FC<TranscriptInputProps> = ({ transcript, onTranscriptChange, audioFile, onAudioFileChange, onLoadExample, disabled, language }) => {
   const [mode, setMode] = useState<InputMode>('text');
 
   const handleModeChange = (newMode: InputMode) => {
@@ -190,8 +397,9 @@ const TranscriptInput: React.FC<TranscriptInputProps> = ({ transcript, onTranscr
   }
 
   const handleRecordingTranscript = (value: string) => {
+
     onTranscriptChange(value);
-    setMode('text');
+    // Don't switch tabs - stay on record tab while recording
   }
 
   return (
@@ -237,7 +445,7 @@ const TranscriptInput: React.FC<TranscriptInputProps> = ({ transcript, onTranscr
             </div>
         )}
 
-        {mode === 'record' && <RecordView onTranscriptChange={handleRecordingTranscript} disabled={disabled} />}
+        {mode === 'record' && <RecordView onTranscriptChange={handleRecordingTranscript} disabled={disabled} language={language} />}
         
         {mode === 'upload' && <UploadView audioFile={audioFile} onAudioFileChange={onAudioFileChange} disabled={disabled} />}
     </div>

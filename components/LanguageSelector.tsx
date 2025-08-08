@@ -19,8 +19,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ language, onLanguag
         disabled={disabled}
         className="appearance-none block w-full bg-white border border-slate-300 rounded-full py-3 pl-11 pr-8 text-base text-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed transition-colors"
       >
+        <option value="Spanish">Español</option>
         <option value="English">English</option>
-        <option value="Spanish">Spanish</option>
       </select>
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
         <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

@@ -13,9 +13,12 @@ const App: React.FC = () => {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [language, setLanguage] = useState<string>('English');
+  const [language, setLanguage] = useState<string>('Spanish');
 
-  const exampleTranscript = "Okay, so... it's my lower back, mainly on the right side. It's been going on for, I don't know, maybe six months now? It's just this constant, dull ache. Sometimes, if I sit too long, it gets really sharp, like a stabbing feeling. On a scale of one to ten, it's usually a 4, but when it gets sharp it's more like a 7 or 8. It's worse in the morning and after driving. Walking around helps a bit. I've been taking ibuprofen, maybe two or three times a day, but it doesn't do much anymore. It's really affecting my sleep... I wake up a few times a night. And I can't really play soccer with my kids anymore, which is tough.";
+  const exampleTranscripts = {
+    Spanish: "Bueno, entonces... es mi espalda baja, principalmente en el lado derecho. Ha estado pasando por, no sé, tal vez seis meses ahora? Es solo este dolor constante y sordo. A veces, si me siento demasiado tiempo, se vuelve realmente agudo, como una sensación punzante. En una escala del uno al diez, generalmente es un 4, pero cuando se vuelve agudo es más como un 7 u 8. Es peor por la mañana y después de conducir. Caminar un poco ayuda. He estado tomando ibuprofeno, tal vez dos o tres veces al día, pero ya no hace mucho. Realmente está afectando mi sueño... me despierto varias veces por la noche. Y ya no puedo jugar fútbol con mis hijos, lo cual es difícil.",
+    English: "Okay, so... it's my lower back, mainly on the right side. It's been going on for, I don't know, maybe six months now? It's just this constant, dull ache. Sometimes, if I sit too long, it gets really sharp, like a stabbing feeling. On a scale of one to ten, it's usually a 4, but when it gets sharp it's more like a 7 or 8. It's worse in the morning and after driving. Walking around helps a bit. I've been taking ibuprofen, maybe two or three times a day, but it doesn't do much anymore. It's really affecting my sleep... I wake up a few times a night. And I can't really play soccer with my kids anymore, which is tough."
+  };
 
   const handleSummarize = useCallback(async () => {
     if ((!transcript.trim() && !audioFile) || isLoading) return;
@@ -41,13 +44,14 @@ const App: React.FC = () => {
   }, [transcript, audioFile, isLoading, language]);
 
   const handleLoadExample = () => {
-    setTranscript(exampleTranscript);
+    setTranscript(exampleTranscripts[language as keyof typeof exampleTranscripts]);
     setAudioFile(null);
     setSummary(null);
     setError(null);
   };
   
   const handleTranscriptChange = (value: string) => {
+
     setTranscript(value);
     if(value) {
       setAudioFile(null);
@@ -75,6 +79,7 @@ const App: React.FC = () => {
               onAudioFileChange={handleAudioFileChange}
               onLoadExample={handleLoadExample}
               disabled={isLoading}
+              language={language}
             />
             <div className="mt-6 flex items-center justify-end gap-4">
               <LanguageSelector
